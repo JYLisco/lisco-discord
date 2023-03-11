@@ -50,7 +50,7 @@ module.exports = {
 
           channel.messages
             .fetch({ limit: 100, after: resetMessage.id })
-            .then((postResetMessages) => {
+            .then(async (postResetMessages) => {
               let sortedMessages = postResetMessages.sort(
                 (a, b) => a.createdTimestamp - b.createdTimestamp
               );
@@ -60,6 +60,7 @@ module.exports = {
               sortedMessages.forEach((msg) => {
                 console.log(`- ${msg.author.username}: ${msg.content}`);
               });
+              await sendMessagesToApi(message, sortedMessages);
             })
             .catch(console.error);
         } else {
@@ -113,4 +114,52 @@ module.exports = {
 
       .catch(console.error);
   },
+};
+
+const sendMessagesToApi = async (message, messages) => {
+  const channel = message.channel;
+  const author = message.author;
+
+  console.log(`Fetched ${messages.size} messages in the channel`);
+
+  // Do something with the messages, e.g. log them to the console
+  let messageLog = [
+    {
+      role: "system",
+      content:
+        'Your name is undeniably Lisco. Lisco stands for "Language Intelligent System for Cognitive Operations". Respond to all messages in a very casual, friendly manner. ',
+    },
+  ];
+  messages.forEach((m) => {
+    if (m.author.bot) {
+      messageLog.push({ role: "assistant", content: m.content });
+    } else {
+      messageLog.push({
+        role: "user",
+        username: m.username,
+        content: m.content,
+      });
+    }
+  });
+
+  console.log(messageLog);
+
+  /* Try hitting the ChatGPT API with the conversation */
+  try {
+    /* Start the 'Is Typing' inicator while GPT constructs a response */
+    await channel.sendTyping(); // Start typing indicator
+    const response = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages: messageLog,
+    });
+    console.log(response);
+
+    /* Push the message as a reply in discord */
+    const content = response.data.choices[0].message;
+    return message.reply(content);
+  } catch (err) {
+    return message.reply(
+      "Unfortunately, I ran into an error while processing your request. I apologize for the inconvenience."
+    );
+  }
 };
