@@ -121,6 +121,7 @@ const sendMessagesToApi = async (triggerMessage, messages) => {
 
     /* Push the message as a reply in discord */
     const content = response.data.choices[0].message;
+
     return triggerMessage.reply(content);
   } catch (err) {
     return triggerMessage.reply(

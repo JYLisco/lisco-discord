@@ -1,3 +1,3 @@
 module.exports = {
-  reset: "Understood. Resetting chat history.",
+  reset: "Resetting chat history.",
 };

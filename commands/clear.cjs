@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require("discord.js");
 const { PermissionsBitField } = require("discord.js");
+const { reset } = require("../constants/strings.cjs");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -31,7 +32,7 @@ module.exports = {
     try {
       await interaction.channel.bulkDelete(amount);
       await interaction.reply({
-        content: `Deleted ${amount} messages.`,
+        content: `Deleted ${amount} messages. ${reset}`,
         ephemeral: true,
       });
     } catch (error) {
