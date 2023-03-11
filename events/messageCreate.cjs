@@ -97,7 +97,9 @@ const sendMessagesToApi = async (triggerMessage, messages) => {
   ];
   messages.forEach((m) => {
     if (m.author.bot) {
-      messageLog.push({ role: "assistant", content: m.content });
+      if (m.author.username === "L.I.S.C.O") {
+        messageLog.push({ role: "assistant", content: m.content });
+      }
     } else {
       messageLog.push({
         role: "user",
@@ -110,12 +112,12 @@ const sendMessagesToApi = async (triggerMessage, messages) => {
   /* Try hitting the ChatGPT API with the conversation */
   try {
     /* Start the 'Is Typing' inicator while GPT constructs a response */
-    await triggerMessage.channel.sendTyping(); // Start typing indicator
+    await triggerMessage.channel.sendTyping();
+    console.log("Attempting to hit ChatGPT Api...");
     const response = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
       messages: messageLog,
     });
-    console.log(response);
 
     /* Push the message as a reply in discord */
     const content = response.data.choices[0].message;
