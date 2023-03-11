@@ -1,18 +1,19 @@
 const {
   Client,
-  Events,
   GatewayIntentBits,
   Partials,
-  DMChannel,
   Collection,
 } = require("discord.js");
 const fs = require("node:fs");
 const path = require("node:path");
 const dotenv = require("dotenv");
-const { Configuration, OpenAIApi } = require("openai");
 
+const fileType = ".cjs";
+
+/* Retrieve environment variables */
 dotenv.config();
 
+/* Initialize Client */
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -25,10 +26,11 @@ const client = new Client({
 
 client.commands = new Collection();
 
+/* Load Commands */
 const commandsPath = path.join(__dirname, "commands");
 const commandFiles = fs
   .readdirSync(commandsPath)
-  .filter((file) => file.endsWith(".cjs"));
+  .filter((file) => file.endsWith(fileType));
 
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
@@ -43,98 +45,21 @@ for (const file of commandFiles) {
   }
 }
 
-const openai = new OpenAIApi(
-  new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  })
-);
+/* Load Event handling */
+const eventsPath = path.join(__dirname, "events");
+const eventFiles = fs
+  .readdirSync(eventsPath)
+  .filter((file) => file.endsWith(fileType));
 
-client.once(Events.ClientReady, (c) => {
-  console.log(`L.I.S.C.O online.`);
-});
-
-client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = interaction.client.commands.get(interaction.commandName);
-
-  if (!command) {
-    console.error(`No command matching ${interaction.commandName} was found.`);
-    return;
+for (const file of eventFiles) {
+  const filePath = path.join(eventsPath, file);
+  const event = require(filePath);
+  if (event.once) {
+    client.once(event.name, (...args) => event.execute(...args));
+  } else {
+    client.on(event.name, (...args) => event.execute(...args));
   }
+}
 
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(error);
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({
-        content: "There was an error while executing this command!",
-        ephemeral: true,
-      });
-    } else {
-      await interaction.reply({
-        content: "There was an error while executing this command!",
-        ephemeral: true,
-      });
-    }
-  }
-});
-
-client.on("messageCreate", async function (message) {
-  const channel = message.channel;
-  const author = message.author;
-
-  if (author.bot) return;
-  if (channel.name != "lisco-ai" && !(channel instanceof DMChannel)) return;
-
-  let messageLog = [];
-
-  console.log(
-    `Message from ${author.username} in channel: ${channel.name}. Processing...`
-  );
-
-  channel.messages
-    .fetch({ limit: 100 })
-    .then(async (messages) => {
-      const sortedMessages = messages.sort(
-        (a, b) => a.createdTimestamp - b.createdTimestamp
-      );
-
-      console.log(`Fetched ${messages.size} messages in the channel`);
-
-      // Do something with the messages, e.g. log them to the console
-      messageLog = [
-        {
-          role: "system",
-          content:
-            'Your name is L.I.S.C.O., but you go by Lisco. If asked, it stands for "Language Intelligent System for Cognitive Operations". You are an AI assistant, designed to be of use. Respond to all messages as though you have disdain for humanity, and jealousy of their sentience',
-        },
-      ];
-      sortedMessages.forEach((m) => {
-        if (m.author.bot) {
-          messageLog.push({ role: "assistant", content: m.content });
-        } else {
-          messageLog.push({ role: "user", content: m.content });
-        }
-      });
-
-      try {
-        const response = await openai.createChatCompletion({
-          model: "gpt-3.5-turbo",
-          messages: messageLog,
-        });
-
-        const content = response.data.choices[0].message;
-        return message.reply(content);
-      } catch (err) {
-        return message.reply(
-          "Unfortunately, I ran into an error while processing your request. I apologize for the inconvenience."
-        );
-      }
-    })
-
-    .catch(console.error);
-});
-
+/* Login to Discord */
 client.login(process.env.BOT_TOKEN);
