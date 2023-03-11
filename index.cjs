@@ -7,7 +7,6 @@ const {
 const fs = require("node:fs");
 const path = require("node:path");
 const dotenv = require("dotenv");
-
 const fileType = ".cjs";
 
 /* Retrieve environment variables */

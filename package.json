@@ -2,7 +2,7 @@
   "name": "chatgpt-bot",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "index.cjs",
   "scripts": {
     "start": "node index.cjs",
     "deploy-commands": "node deploy-commands.cjs",
