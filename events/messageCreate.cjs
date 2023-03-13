@@ -122,9 +122,15 @@ const sendMessagesToApi = async (triggerMessage, messages) => {
     /* Break the response into an array of strings for threading. */
     const content = response.data.choices[0].message;
 
-    //console.log(content);
+    console.log(content);
 
-    const chunks = splitMessage(content.content);
+    //const chunks = mergeArray(splitMessage(content.content));
+
+    const chunks =
+      content.content.length <= 2000
+        ? [content.content]
+        : mergeArray(splitMessage(content.content));
+
     console.log(
       "Chunks-------------------------------------------------------------------------------------"
     );
@@ -132,10 +138,6 @@ const sendMessagesToApi = async (triggerMessage, messages) => {
     console.log(
       "END Chunks-------------------------------------------------------------------------------------"
     );
-    // const chunks =
-    //   content.content.length <= 2000
-    //     ? [content.content]
-    //     : splitMessage(content.content);
 
     /* Push the message as a reply in discord */
     await postToDiscord(triggerMessage, chunks);
@@ -147,64 +149,6 @@ const sendMessagesToApi = async (triggerMessage, messages) => {
   }
 };
 
-// function splitMessage(response) {
-//   console.log(`Attempting to process message of length ${response.length}...`);
-//   const maxChunkLength = 1000; // Maximum length of each chunk
-//   const chunks = [];
-
-//   let inCodeBlock = false;
-//   let codeBlockStart = 0;
-//   let lastParagraphEnd = 0;
-//   let lastSentenceEnd = 0;
-//   let lastWordEnd = 0;
-
-//   for (let i = 0; i < response.length; i++) {
-//     if (response[i] === "`" && response.substring(i, i + 3) === "```") {
-//       inCodeBlock = !inCodeBlock;
-//     } else if (i - codeBlockStart >= maxChunkLength && !inCodeBlock) {
-//       if (i - lastSentenceEnd >= maxChunkLength) {
-//         // If we're in the middle of a sentence, finish the sentence
-//         chunks.push(response.substring(codeBlockStart, lastSentenceEnd + 1));
-//         codeBlockStart = lastSentenceEnd + 1;
-//         lastParagraphEnd = lastSentenceEnd + 1;
-//         lastWordEnd = lastSentenceEnd + 1;
-//       } else if (i - lastWordEnd >= maxChunkLength) {
-//         // If we're in the middle of a word, finish the word
-//         chunks.push(response.substring(codeBlockStart, lastWordEnd));
-//         codeBlockStart = lastWordEnd;
-//         lastParagraphEnd = lastWordEnd;
-//         lastSentenceEnd = lastWordEnd;
-//       } else {
-//         // Otherwise, finish the current paragraph
-//         chunks.push(response.substring(codeBlockStart, lastParagraphEnd));
-//         codeBlockStart = lastParagraphEnd;
-//         lastSentenceEnd = lastParagraphEnd;
-//         lastWordEnd = lastParagraphEnd;
-//       }
-//     } else {
-//       if (response[i] === "." || response[i] === "?" || response[i] === "!") {
-//         lastSentenceEnd = i;
-//       }
-//       if (response[i] === " ") {
-//         lastWordEnd = i;
-//       }
-//       if (response[i] === "\n") {
-//         lastParagraphEnd = i;
-//         lastSentenceEnd = i;
-//         lastWordEnd = i;
-//       }
-//     }
-//   }
-
-//   // Add the last chunk to the `chunks` array if it is not empty
-//   const lastChunk = response.substring(codeBlockStart);
-//   if (lastChunk.length > 0) {
-//     chunks.push(lastChunk);
-//   }
-
-//   console.log(`Message split into ${chunks.length} chunks...`);
-//   return chunks;
-// }
 function splitMessage(input) {
   const lines = input.split("\n");
   const result = [];
@@ -265,10 +209,14 @@ function splitMessage(input) {
     result.push("```" + currentBlock.join("\n") + "```");
   }
 
-  let mergedResult = [result[0]];
-  let currentLength = result[0].length;
-  for (let i = 1; i < result.length; i++) {
-    const line = result[i];
+  return result;
+}
+
+const mergeArray = (array) => {
+  let mergedResult = [array[0]];
+  let currentLength = array[0].length;
+  for (let i = 1; i < array.length; i++) {
+    const line = array[i];
 
     if (currentLength + line.length + 1 > 2000) {
       mergedResult.push(line);
@@ -280,7 +228,7 @@ function splitMessage(input) {
   }
 
   return mergedResult.filter((str) => str.trim() !== "");
-}
+};
 
 const postToDiscord = async (triggerMessage, chunks) => {
   // Send the first message as a reply to the trigger message
