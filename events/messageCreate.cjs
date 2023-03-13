@@ -179,12 +179,9 @@ function splitMessage(input) {
         delimiterPos = escapedLine.indexOf("```", delimiterPos + 1);
       }
 
-      if (
-        escapedLine.trim() === "```" ||
-        escapedLine.trim() === "```javascript"
-      ) {
+      if (escapedLine.trim().startsWith("```")) {
         if (currentBlock !== null) {
-          result.push("```" + currentBlock.join("\n") + "```");
+          result.push(escapedLine + currentBlock.join("\n") + "```");
           currentBlock = null;
         } else {
           currentBlock = [];
