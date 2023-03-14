@@ -1,12 +1,12 @@
-const { Events, DMChannel } = require("discord.js");
-const dotenv = require("dotenv");
-const { Configuration, OpenAIApi } = require("openai");
-const { reset } = require("../constants/strings.cjs");
-const {
-  japaneseBehavior,
-  liscoBehavior,
-} = require("../constants/behaviors.cjs");
 
+
+import { Events, DMChannel } from "discord.js";
+import dotenv from "dotenv";
+import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from "openai";
+import { mergeArray } from "../_util/mergeArray";
+import { splitMessage } from "../_util/splitMessage";
+import { japaneseBehavior, liscoBehavior } from "../constants/behaviors";
+import { reset } from "../constants/strings";
 dotenv.config();
 
 /* Initialize the OpenAIAPI with the .env API Key */
@@ -20,7 +20,7 @@ const channels = ["lisco-ai", "japan-ai"];
 
 module.exports = {
   name: Events.MessageCreate,
-  async execute(triggerMessage) {
+  async execute(triggerMessage: any) {
     if (triggerMessage.author.bot) return;
     console.log(channels);
     if (
@@ -36,11 +36,11 @@ module.exports = {
     /* Fetch conversations to this point. */
     triggerMessage.channel.messages
       .fetch({ limit: 100 })
-      .then(async (channelMessages) => {
+      .then(async (channelMessages: any) => {
         await findRelevantMessages(triggerMessage, channelMessages).then(
           async (relevantMessages) => {
             let sortedMessages = relevantMessages.sort(
-              (a, b) => a.createdTimestamp - b.createdTimestamp
+              (a: any, b: any) => a.createdTimestamp - b.createdTimestamp
             );
             console.log(
               `Fetched ${sortedMessages.size} messages in the channel`
@@ -54,9 +54,9 @@ module.exports = {
   },
 };
 
-const findRelevantMessages = async (message, messages) => {
+const findRelevantMessages = async (message: any, messages: any) => {
   const resetMessage = messages.find(
-    (msg) => msg.content.includes(reset) && msg.author.username === "L.I.S.C.O"
+    (msg: any) => msg.content.includes(reset) && msg.author.username === "L.I.S.C.O"
   );
   if (resetMessage) {
     console.log(`Found reset command.`);
@@ -78,7 +78,7 @@ const findRelevantMessages = async (message, messages) => {
   }
 };
 
-const findBehaviorPackage = (channel) => {
+const findBehaviorPackage = (channel: any) => {
   switch (channel) {
     case "japan-ai":
       return japaneseBehavior;
@@ -87,15 +87,15 @@ const findBehaviorPackage = (channel) => {
   }
 };
 
-const sendMessagesToApi = async (triggerMessage, messages) => {
+const sendMessagesToApi = async (triggerMessage: any, messages: any) => {
   /* Start Constructing Chat History for Conversations */
-  let messageLog = [
+  let messageLog: Array<ChatCompletionRequestMessage> = [
     {
       role: "system",
       content: findBehaviorPackage(triggerMessage.channel.name),
     },
   ];
-  messages.forEach((m) => {
+  messages.forEach((m: { author: { bot: any; username: string; }; content: any; }) => {
     if (m.author.bot) {
       if (m.author.username === "L.I.S.C.O") {
         messageLog.push({ role: "assistant", content: m.content });
@@ -103,7 +103,6 @@ const sendMessagesToApi = async (triggerMessage, messages) => {
     } else {
       messageLog.push({
         role: "user",
-        username: m.username,
         content: m.content,
       });
     }
@@ -126,7 +125,8 @@ const sendMessagesToApi = async (triggerMessage, messages) => {
 
     //const chunks = mergeArray(splitMessage(content.content));
 
-    const chunks =
+    if (content){
+      const chunks = 
       content.content.length <= 2000
         ? [content.content]
         : mergeArray(splitMessage(content.content));
@@ -141,6 +141,11 @@ const sendMessagesToApi = async (triggerMessage, messages) => {
 
     /* Push the message as a reply in discord */
     await postToDiscord(triggerMessage, chunks);
+    }
+    else{
+      throw "No API Response"
+    }
+
   } catch (err) {
     console.log(err);
     return triggerMessage.reply(
@@ -149,85 +154,8 @@ const sendMessagesToApi = async (triggerMessage, messages) => {
   }
 };
 
-function splitMessage(input) {
-  const lines = input.split("\n");
-  const result = [];
-  let currentBlock = null;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    if (line.includes("```")) {
-      let escapedLine = line;
-      let delimiterPos = line.indexOf("```");
-      while (delimiterPos !== -1) {
-        if (delimiterPos > 0 && line[delimiterPos - 1] !== "`") {
-          // Replace ``` with ``` in the middle of code blocks with \`\`\`
-          if (currentBlock !== null) {
-            escapedLine =
-              escapedLine.slice(0, delimiterPos) +
-              "\\`\\`\\`" +
-              escapedLine.slice(delimiterPos + 3);
-            delimiterPos += 3;
-          } else {
-            escapedLine =
-              escapedLine.slice(0, delimiterPos) +
-              "`" +
-              escapedLine.slice(delimiterPos);
-          }
-        }
-        delimiterPos = escapedLine.indexOf("```", delimiterPos + 1);
-      }
-
-      if (escapedLine.trim().startsWith("```")) {
-        if (currentBlock !== null) {
-          result.push(escapedLine + currentBlock.join("\n") + "```");
-          currentBlock = null;
-        } else {
-          currentBlock = [];
-        }
-      } else {
-        if (currentBlock !== null) {
-          currentBlock.push(escapedLine);
-        } else {
-          result.push(escapedLine);
-        }
-      }
-    } else {
-      if (currentBlock !== null) {
-        currentBlock.push(line);
-      } else {
-        result.push(line);
-      }
-    }
-  }
-
-  if (currentBlock !== null) {
-    result.push("```" + currentBlock.join("\n") + "```");
-  }
-
-  return result;
-}
-
-const mergeArray = (array) => {
-  let mergedResult = [array[0]];
-  let currentLength = array[0].length;
-  for (let i = 1; i < array.length; i++) {
-    const line = array[i];
-
-    if (currentLength + line.length + 1 > 2000) {
-      mergedResult.push(line);
-      currentLength = line.length;
-    } else {
-      mergedResult[mergedResult.length - 1] += "\n" + line;
-      currentLength += line.length + 1;
-    }
-  }
-
-  return mergedResult.filter((str) => str.trim() !== "");
-};
-
-const postToDiscord = async (triggerMessage, chunks) => {
+const postToDiscord = async (triggerMessage: any, chunks: any) => {
   // Send the first message as a reply to the trigger message
   const firstMessage = await triggerMessage.reply(chunks[0]);
   let previousMessage = firstMessage;

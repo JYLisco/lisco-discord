@@ -1,8 +1,9 @@
-const { SlashCommandBuilder } = require("discord.js");
-const { PermissionsBitField } = require("discord.js");
-const { reset } = require("../constants/strings.cjs");
+import { CommandInteraction, PermissionsBitField, SlashCommandBuilder } from "discord.js";
+import { Permissions } from "discord.js";
+import { reset } from "../constants/strings";
+import { Command } from "./interfaces/command";
 
-module.exports = {
+const clearCommand: Command = {
   data: new SlashCommandBuilder()
     .setName("clear")
     .addIntegerOption((option) =>
@@ -12,12 +13,10 @@ module.exports = {
         .setRequired(true)
     ) // Add an integer option for the amount of messages to delete
     .setDescription("Deletes a user-specified number of messages."),
-  async execute(interaction) {
+  async execute(interaction: any) {
     // Check if user has the administrator permission
     if (
-      !interaction.member.permissions.has(
-        PermissionsBitField.Flags.Administrator
-      )
+      !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)
     ) {
       return interaction.reply({
         content: "You do not have permission to use this command.",
@@ -30,7 +29,7 @@ module.exports = {
 
     // Delete the specified number of messages
     try {
-      await interaction.channel.bulkDelete(amount);
+      await interaction.channel?.bulkDelete(amount);
       await interaction.reply({
         content: `Deleted ${amount} messages. ${reset}`,
         ephemeral: true,
@@ -44,3 +43,5 @@ module.exports = {
     }
   },
 };
+
+export default clearCommand;
