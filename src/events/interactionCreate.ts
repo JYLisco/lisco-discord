@@ -1,9 +1,9 @@
-import { Interaction } from "discord.js";
-import { Command } from "src/commands/interfaces/command";
-import { DiscordClient } from "src/interfaces/discordClient";
+import { Interaction } from 'discord.js';
+import { Command } from 'src/commands/interfaces/command';
+import { DiscordClient } from 'src/interfaces/discordClient';
 
 module.exports = {
-  name: "interactionCreate",
+  name: 'interactionCreate',
   async execute(interaction: Interaction) {
     if (!interaction.isCommand()) return;
 

@@ -4,6 +4,7 @@
       "module": "Commonjs",
       "rootDir": "src",
       "outDir": "./dist",
+      "lib": ["dom", "es6", "es2015.promise"],
       "strict": true,
       "moduleResolution": "node",
       "importHelpers": true,
@@ -21,9 +22,7 @@
       "baseUrl": "./"
   },
   "include": [
-    "src/**/*.ts",
     "./**/*.ts"
-
   ],
   "exclude": [
       "node_modules",

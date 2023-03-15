@@ -1,1 +1,1 @@
-export const reset = "Resetting chat history.";
+export const reset = 'Resetting chat history.';
