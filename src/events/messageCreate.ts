@@ -6,7 +6,13 @@ import { splitMessage } from '../_util/splitMessage';
 import { behaviors } from '../constants/behaviors';
 import { reset } from '../constants/strings';
 import { AppLogger } from '../_util/appLogger';
+import { trimMessageLog } from '../_util/trimMessageLog';
 dotenv.config();
+
+/* Max Token Count */
+const MAX_TOKEN_COUNT = 4096;
+const RESPONSE_TOKEN_COUNT = 16;
+const PROMPT_TOKEN_COUNT = MAX_TOKEN_COUNT - RESPONSE_TOKEN_COUNT - 20; //Err on Side of Caution...
 
 /* Initialize the OpenAIAPI with the .env API Key */
 const openai = new OpenAIApi(
@@ -16,8 +22,6 @@ const openai = new OpenAIApi(
 );
 
 const logger = AppLogger.getInstance();
-
-const channels = ['lisco-ai', 'japan-ai'];
 
 module.exports = {
   name: Events.MessageCreate,
@@ -79,7 +83,10 @@ const findRelevantMessages = async (message: any, messages: any) => {
     return postResetMessages;
   } else {
     logger.info(`No reset command found. Loading messages...`);
-    return messages;
+    let sortedMessages = messages.sort(
+      (a: any, b: any) => a.createdTimestamp - b.createdTimestamp
+    );
+    return sortedMessages;
   }
 };
 
@@ -110,6 +117,8 @@ const sendMessagesToApi = async (triggerMessage: any, messages: any) => {
     }
   );
 
+  messageLog = trimMessageLog(messageLog, PROMPT_TOKEN_COUNT);
+  logger.info(`Trimmed to ${messageLog.length - 1} messages.`);
   /* Try hitting the ChatGPT API with the conversation */
   try {
     /* Start the 'Is Typing' indicator while GPT constructs a response */
