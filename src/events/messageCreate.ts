@@ -1,12 +1,11 @@
 import { Events, DMChannel, TextChannel } from 'discord.js';
 import dotenv from 'dotenv';
 import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
-import { mergeArray } from '../_util/mergeArray';
-import { splitMessage } from '../_util/splitMessage';
 import { behaviors } from '../constants/behaviors';
 import { CustomStrings } from '../constants/strings';
 import { AppLogger, Loggers } from '../_util/appLogger';
 import { trimMessageLog } from '../_util/trimMessageLog';
+import { processDiscordMessage } from '../_util/processDiscordMessage';
 dotenv.config();
 
 /* Max Token Count */
@@ -141,10 +140,7 @@ const sendMessagesToApi = async (triggerMessage: any, messages: any) => {
     //const chunks = mergeArray(splitMessage(content.content));
 
     if (content) {
-      const chunks =
-        content.content.length <= 2000
-          ? [content.content]
-          : mergeArray(splitMessage(content.content));
+      const chunks = processDiscordMessage(content.content);
 
       logger.info(Loggers.Api, `Message Chunks${CustomStrings.Divider}`);
       logger.info(Loggers.Api, chunks);
