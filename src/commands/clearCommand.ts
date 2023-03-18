@@ -4,7 +4,7 @@ import {
   SlashCommandBuilder,
 } from 'discord.js';
 import { Permissions } from 'discord.js';
-import { reset } from '../constants/strings';
+import { CustomStrings } from '../constants/strings';
 import { Command } from './interfaces/command';
 
 const clearCommand: Command = {
@@ -37,7 +37,7 @@ const clearCommand: Command = {
     try {
       await interaction.channel?.bulkDelete(amount);
       await interaction.reply({
-        content: `Deleted ${amount} messages. ${reset}`,
+        content: `Deleted ${amount} messages. ${CustomStrings.Reset}`,
         ephemeral: true,
       });
     } catch (error) {

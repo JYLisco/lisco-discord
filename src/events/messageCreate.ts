@@ -4,15 +4,15 @@ import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
 import { mergeArray } from '../_util/mergeArray';
 import { splitMessage } from '../_util/splitMessage';
 import { behaviors } from '../constants/behaviors';
-import { reset } from '../constants/strings';
-import { AppLogger } from '../_util/appLogger';
+import { CustomStrings } from '../constants/strings';
+import { AppLogger, Loggers } from '../_util/appLogger';
 import { trimMessageLog } from '../_util/trimMessageLog';
 dotenv.config();
 
 /* Max Token Count */
 const MAX_TOKEN_COUNT = 4096;
-const RESPONSE_TOKEN_COUNT = 16;
-const PROMPT_TOKEN_COUNT = MAX_TOKEN_COUNT - RESPONSE_TOKEN_COUNT - 20; //Err on Side of Caution...
+const RESPONSE_TOKEN_COUNT = 500;
+const PROMPT_TOKEN_COUNT = MAX_TOKEN_COUNT - RESPONSE_TOKEN_COUNT; //Err on Side of Caution...
 
 /* Initialize the OpenAIAPI with the .env API Key */
 const openai = new OpenAIApi(
@@ -38,6 +38,7 @@ module.exports = {
     }
 
     logger.info(
+      Loggers.App,
       `Message from ${triggerMessage.author.username} in channel: ${triggerMessage.channel.name}. Processing...`
     );
 
@@ -51,6 +52,7 @@ module.exports = {
               (a: any, b: any) => a.createdTimestamp - b.createdTimestamp
             );
             logger.info(
+              Loggers.App,
               `Fetched ${sortedMessages.size} messages in the channel`
             );
             await sendMessagesToApi(triggerMessage, sortedMessages);
@@ -65,24 +67,25 @@ module.exports = {
 const findRelevantMessages = async (message: any, messages: any) => {
   const resetMessage = messages.find(
     (msg: any) =>
-      msg.content.includes(reset) && msg.author.username === 'L.I.S.C.O'
+      msg.content.includes(CustomStrings.Reset) &&
+      msg.author.username === 'L.I.S.C.O'
   );
   if (resetMessage) {
-    logger.info(`Found reset command.`);
-    logger.info('Reset: ', {
+    logger.info(Loggers.App, `Found reset command.`);
+    logger.info(Loggers.App, 'Reset: ', {
       id: resetMessage.id,
       content: resetMessage.content,
       bot: resetMessage.author.bot,
       author: resetMessage.author.username,
     });
-    logger.info(`Loading messages after reset command...`);
+    logger.info(Loggers.App, `Loading messages after reset command...`);
     const postResetMessages = await message.channel.messages.fetch({
       limit: 100,
       after: resetMessage.id,
     });
     return postResetMessages;
   } else {
-    logger.info(`No reset command found. Loading messages...`);
+    logger.info(Loggers.App, `No reset command found. Loading messages...`);
     let sortedMessages = messages.sort(
       (a: any, b: any) => a.createdTimestamp - b.createdTimestamp
     );
@@ -118,12 +121,12 @@ const sendMessagesToApi = async (triggerMessage: any, messages: any) => {
   );
 
   messageLog = trimMessageLog(messageLog, PROMPT_TOKEN_COUNT);
-  logger.info(`Trimmed to ${messageLog.length - 1} messages.`);
+  logger.info(Loggers.App, `Trimmed to ${messageLog.length - 1} messages.`);
   /* Try hitting the ChatGPT API with the conversation */
   try {
     /* Start the 'Is Typing' indicator while GPT constructs a response */
     await triggerMessage.channel.sendTyping();
-    logger.info('Attempting to hit ChatGPT Api...');
+    logger.info(Loggers.App, 'Attempting to hit ChatGPT Api...');
     const response = await openai.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: messageLog,
@@ -132,8 +135,9 @@ const sendMessagesToApi = async (triggerMessage: any, messages: any) => {
     /* Break the response into an array of strings for threading. */
     const content = response.data.choices[0].message;
 
-    //logger.info(content);
-
+    logger.info(Loggers.Api, `Response${CustomStrings.Divider}`);
+    logger.info(Loggers.Api, content?.content);
+    logger.info(Loggers.Api, `END Response${CustomStrings.Divider}`);
     //const chunks = mergeArray(splitMessage(content.content));
 
     if (content) {
@@ -142,13 +146,9 @@ const sendMessagesToApi = async (triggerMessage: any, messages: any) => {
           ? [content.content]
           : mergeArray(splitMessage(content.content));
 
-      logger.info(
-        'Chunks-------------------------------------------------------------------------------------'
-      );
-      logger.info(chunks);
-      logger.info(
-        'END Chunks-------------------------------------------------------------------------------------'
-      );
+      logger.info(Loggers.Api, `Message Chunks${CustomStrings.Divider}`);
+      logger.info(Loggers.Api, chunks);
+      logger.info(Loggers.Api, `END Message Chunks${CustomStrings.Divider}`);
 
       /* Push the message as a reply in discord */
       await postToDiscord(triggerMessage, chunks);
@@ -156,10 +156,8 @@ const sendMessagesToApi = async (triggerMessage: any, messages: any) => {
       throw 'No API Response';
     }
   } catch (err) {
-    logger.error(err);
-    return triggerMessage.reply(
-      'Unfortunately, I ran into an error while processing your request. I apologize for the inconvenience.'
-    );
+    logger.error(Loggers.App, err);
+    return triggerMessage.reply(CustomStrings.ErrorMessage);
   }
 };
 

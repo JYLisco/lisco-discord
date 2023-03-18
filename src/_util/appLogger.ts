@@ -2,19 +2,25 @@ import fs from 'fs';
 import path from 'path';
 import { Console } from 'console';
 
+export enum Loggers {
+  App = 'app',
+  Api = 'api',
+}
+
 export class AppLogger {
   private static instance: AppLogger;
   private consoleLogger: Console;
-  private fileLogger: fs.WriteStream;
-  private logFilePath: string;
+  private appLogger: fs.WriteStream;
+  private apiLogger: fs.WriteStream;
 
   private constructor() {
     this.consoleLogger = new Console(process.stdout, process.stderr);
-
     const projectRootPath = AppLogger.getProjectRootPath();
-    this.logFilePath = path.join(projectRootPath, 'var/log', 'app.log');
 
-    this.fileLogger = fs.createWriteStream(this.logFilePath, { flags: 'a' });
+    const logFilePath = path.join(projectRootPath, 'var/log', 'app.log');
+    const apiLogFilePath = path.join(projectRootPath, 'var/log', 'api.log');
+    this.appLogger = fs.createWriteStream(logFilePath, { flags: 'a' });
+    this.apiLogger = fs.createWriteStream(apiLogFilePath, { flags: 'a' });
   }
 
   private static getProjectRootPath(): string {
@@ -31,37 +37,52 @@ export class AppLogger {
     return AppLogger.instance;
   }
 
-  private logToConsole(methodName: keyof Console, ...args: unknown[]): void {
+  private logToConsole(
+    logger: Loggers,
+    methodName: keyof Console,
+    ...args: unknown[]
+  ): void {
     // Cast consoleLogger to any to avoid TypeScript errors with apply
-    (this.consoleLogger as any)[methodName].apply(this.consoleLogger, args);
+    if (logger === 'app') {
+      (this.consoleLogger as any)[methodName].apply(this.consoleLogger, args);
+    }
   }
 
-  private logToFile(logLevel: string, ...args: unknown[]): void {
+  private logToFile(
+    logger: Loggers,
+    logLevel: string,
+    ...args: unknown[]
+  ): void {
     // Format the message with the current time in ISO format and the log level
     const timestamp = new Date().toISOString();
     const formattedMessage = `[${timestamp}] [${logLevel}] ${args.join(' ')}\n`;
 
+    if (logger === 'app') {
+      this.appLogger.write(formattedMessage);
+    } else {
+      this.apiLogger.write(formattedMessage);
+    }
+
     // Write the formatted message to the log file
-    this.fileLogger.write(formattedMessage);
   }
 
-  debug(...args: unknown[]): void {
-    this.logToConsole('debug', ...args);
-    this.logToFile('DEBUG', ...args);
+  debug(logger: Loggers, ...args: unknown[]): void {
+    this.logToConsole(logger, 'debug', ...args);
+    this.logToFile(logger, 'DEBUG', ...args);
   }
 
-  info(...args: unknown[]): void {
-    this.logToConsole('info', ...args);
-    this.logToFile('INFO', ...args);
+  info(logger: Loggers, ...args: unknown[]): void {
+    this.logToConsole(logger, 'info', ...args);
+    this.logToFile(logger, 'INFO', ...args);
   }
 
-  warn(...args: unknown[]): void {
-    this.logToConsole('warn', ...args);
-    this.logToFile('WARN', ...args);
+  warn(logger: Loggers, ...args: unknown[]): void {
+    this.logToConsole(logger, 'warn', ...args);
+    this.logToFile(logger, 'WARN', ...args);
   }
 
-  error(...args: unknown[]): void {
-    this.logToConsole('error', ...args);
-    this.logToFile('ERROR', ...args);
+  error(logger: Loggers, ...args: unknown[]): void {
+    this.logToConsole(logger, 'error', ...args);
+    this.logToFile(logger, 'ERROR', ...args);
   }
 }

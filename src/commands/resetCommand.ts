@@ -1,6 +1,6 @@
 import { CommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Command } from './interfaces/command';
-import { reset } from '../constants/strings';
+import { CustomStrings } from '../constants/strings';
 
 const resetCommand: Command = {
   data: new SlashCommandBuilder()
@@ -8,7 +8,7 @@ const resetCommand: Command = {
     .setDescription('Resets a conversation.'),
 
   async execute(interaction: any) {
-    await interaction.reply(reset);
+    await interaction.reply(CustomStrings.Reset);
   },
 };
 export default resetCommand;
