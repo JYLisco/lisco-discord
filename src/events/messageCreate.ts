@@ -7,6 +7,7 @@ import { trimMessageLog } from '../_util/openai/gpt/trimMessageLog';
 import { postDiscordReply } from '../_util/discord/postDiscordReply';
 import { formatDate } from '../_util/strings/dateFormat';
 import { OpenAiClient } from '../_util/openai/openAiClient';
+import { generateSystemMessage } from '../_util/discord/generateSystemMessage';
 dotenv.config();
 
 /* Max Token Count */
@@ -85,38 +86,6 @@ const findRelevantMessages = async (message: Message, messages: any) => {
   }
 };
 
-const generateSystemMessage = async (
-  discordMessage: Message
-): Promise<ChatCompletionRequestMessage> => {
-  let systemMessage: string = CustomStrings['Identity'];
-  const channel = discordMessage.channel;
-
-  try {
-    // Fetches the channel object from the Discord API to get its topic
-    const fetchedChannel = await channel.fetch();
-    if (fetchedChannel instanceof TextChannel) {
-      const channelTopic = fetchedChannel.topic;
-
-      if (channelTopic && channelTopic.includes('Mission:')) {
-        const mission = channelTopic.split('Mission:')[1].trim();
-        systemMessage += ` Your mission: ${mission}`;
-      }
-    }
-  } catch {
-    logger.error(
-      Loggers.App,
-      `Failed to fetch system Message. Reverting to default.`
-    );
-  }
-
-  const chatCompletionMessage: ChatCompletionRequestMessage = {
-    role: 'system',
-    content: systemMessage,
-  };
-
-  return chatCompletionMessage;
-};
-
 const sendMessagesToApi = async (
   triggerMessage: Message,
   messages: Array<Message>
@@ -124,7 +93,10 @@ const sendMessagesToApi = async (
   var channel = triggerMessage.channel as TextChannel;
   /* Start Constructing Chat History for Conversations */
   let messageLog: Array<ChatCompletionRequestMessage> = [
-    await generateSystemMessage(triggerMessage),
+    {
+      role: 'system',
+      content: await generateSystemMessage(triggerMessage),
+    },
   ];
   messages.forEach(
     (m: { author: { bot: any; username: string }; content: any }) => {
