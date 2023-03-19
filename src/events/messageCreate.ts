@@ -1,7 +1,7 @@
-import { Events, DMChannel, TextChannel } from 'discord.js';
+import { Events, DMChannel, TextChannel, Message } from 'discord.js';
 import dotenv from 'dotenv';
 import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
-import { behaviors } from '../constants/behaviors';
+import { Behaviors } from '../constants/behaviors';
 import { CustomStrings } from '../constants/strings';
 import { AppLogger, Loggers } from '../_util/appLogger';
 import { trimMessageLog } from '../_util/trimMessageLog';
@@ -92,17 +92,43 @@ const findRelevantMessages = async (message: any, messages: any) => {
   }
 };
 
-const findBehaviorPackage = (channelName: string): string => {
-  return behaviors[channelName] ?? behaviors['default'];
+const generateSystemMessage = async (
+  discordMessage: Message
+): Promise<ChatCompletionRequestMessage> => {
+  let systemMessage: string = Behaviors['Default'];
+  const channel = discordMessage.channel;
+
+  try {
+    // Fetches the channel object from the Discord API to get its topic
+    const fetchedChannel = await channel.fetch();
+    if (fetchedChannel instanceof TextChannel) {
+      const channelTopic = fetchedChannel.topic;
+
+      if (channelTopic && channelTopic.includes('Mission:')) {
+        const mission = channelTopic.split('Mission:')[1].trim();
+        systemMessage += ` Your mission: ${mission}`;
+      }
+    }
+    logger.info(Loggers.App, 'System Message', systemMessage);
+  } catch {
+    logger.error(
+      Loggers.App,
+      `Failed to fetch system Message. Reverting to default.`
+    );
+  }
+
+  const chatCompletionMessage: ChatCompletionRequestMessage = {
+    role: 'system',
+    content: systemMessage,
+  };
+
+  return chatCompletionMessage;
 };
 
 const sendMessagesToApi = async (triggerMessage: any, messages: any) => {
   /* Start Constructing Chat History for Conversations */
   let messageLog: Array<ChatCompletionRequestMessage> = [
-    {
-      role: 'system',
-      content: findBehaviorPackage(triggerMessage.channel.name),
-    },
+    await generateSystemMessage(triggerMessage),
   ];
   messages.forEach(
     (m: { author: { bot: any; username: string }; content: any }) => {

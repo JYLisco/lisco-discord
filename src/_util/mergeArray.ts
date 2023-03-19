@@ -24,5 +24,5 @@ export const mergeArray = (array: Array<string>): Array<string> => {
   }
 
   /* Filters out any empty or whitespace-only strings from the result array */
-  return mergedResult.filter((str) => str.trim() !== '');
+  return mergedResult;
 };

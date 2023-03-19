@@ -2,6 +2,7 @@ export const splitMessage = (input: string): Array<string> => {
   /* Initialize an empty array to hold the result */
   let result: string[] = [];
 
+  var firstLine = '';
   /* Initialize an empty string to hold any current code block */
   let codeBlock = '';
 
@@ -14,13 +15,25 @@ export const splitMessage = (input: string): Array<string> => {
         codeBlock += line;
         result.push(codeBlock);
         codeBlock = '';
+        firstLine = '';
       } else {
         /* Otherwise, start a new code block */
         codeBlock = line + '\n';
+        firstLine = codeBlock;
       }
     } else if (codeBlock) {
-      /* If there's a code block in progress, add the line to it */
-      codeBlock += line + '\n';
+      /* If there's a code block in progress, check if adding the line will exceed the maximum length */
+      if ((codeBlock + line + '\n').length > 1995) {
+        /* Close existing code block if it exceeded the maximum length, and add it to the result array */
+        codeBlock += '```\n';
+        result.push(codeBlock.trim());
+
+        /* Start a new code block with the current line */
+        codeBlock = firstLine + line + '\n';
+      } else {
+        /* If the line fits within the maximum length, add it to the code block */
+        codeBlock += line + '\n';
+      }
     } else {
       /* Otherwise, add the line to the result array as normal */
       result.push(line);
@@ -33,7 +46,7 @@ export const splitMessage = (input: string): Array<string> => {
   }
 
   /* Filter out any empty entries in the result array */
-  return result.filter((entry) => entry !== '');
+  return result;
 };
 
 export const splitMessage_old = (input: string): Array<string> => {
