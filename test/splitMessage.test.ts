@@ -1,4 +1,4 @@
-import { splitMessage } from '../src/_util/splitMessage';
+import { splitMessage } from '../src/_util/strings/splitMessage';
 
 describe('splitMessage', () => {
   it('should split regular text into an array of lines', () => {

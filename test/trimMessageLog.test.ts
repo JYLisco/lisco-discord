@@ -1,5 +1,5 @@
 import { ChatCompletionRequestMessage } from 'openai';
-import { trimMessageLog } from '../src/_util/trimMessageLog';
+import { trimMessageLog } from '../src/_util/openai/gpt/trimMessageLog';
 import { encode } from 'gpt-3-encoder';
 
 describe('trimMessageLog', () => {

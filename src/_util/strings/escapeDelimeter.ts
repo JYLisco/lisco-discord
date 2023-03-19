@@ -1,4 +1,4 @@
-export const escapeAllDelimiters = (inputs: string[]): string[] => {
+export const escapeAllDelimiters = (inputs: Array<string>): string[] => {
   // Map each input string to its escaped version using the escapeDelimiter() function
   const escapedInputs = inputs.map((input) => escapeDelimiter(input));
 

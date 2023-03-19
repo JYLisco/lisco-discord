@@ -5,7 +5,7 @@ import path from 'node:path';
 import dotenv from 'dotenv';
 import { Command } from './commands/interfaces/command';
 import { DiscordClient } from './interfaces/discordClient';
-import { AppLogger } from './_util/appLogger';
+import { AppLogger } from './_util/resources/appLogger';
 
 /* Retrieve environment variables */
 dotenv.config();

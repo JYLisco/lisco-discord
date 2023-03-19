@@ -2,7 +2,7 @@ import { REST, SlashCommandBuilder } from 'discord.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import dotenv from 'dotenv';
-import { AppLogger } from './_util/appLogger';
+import { AppLogger } from './_util/resources/appLogger';
 
 dotenv.config();
 

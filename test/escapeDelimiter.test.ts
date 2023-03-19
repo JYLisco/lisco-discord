@@ -1,4 +1,4 @@
-import { escapeDelimiter } from '../src/_util/escapeDelimeter';
+import { escapeDelimiter } from '../src/_util/strings/escapeDelimeter';
 
 describe('escapeDelimiter', () => {
   it('returns original string if no delimiters', () => {
