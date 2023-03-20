@@ -1,6 +1,6 @@
 import { Interaction } from 'discord.js';
 import { Command } from 'src/commands/interfaces/command';
-import { DiscordClient } from 'src/interfaces/discordClient';
+import { DiscordClient } from 'src/discordClient';
 
 module.exports = {
   name: 'interactionCreate',

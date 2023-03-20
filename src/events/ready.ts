@@ -1,5 +1,5 @@
 import { Events } from 'discord.js';
-import { DiscordClient } from 'src/interfaces/discordClient';
+import { DiscordClient } from 'src/discordClient';
 import { AppLogger, Loggers } from '../_util/resources/appLogger';
 
 const logger = AppLogger.getInstance();

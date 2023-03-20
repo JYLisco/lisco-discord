@@ -5,15 +5,15 @@ import { CustomStrings } from '../constants/strings';
 import { AppLogger, Loggers } from '../_util/resources/appLogger';
 import { trimMessageLog } from '../_util/openai/gpt/trimMessageLog';
 import { postDiscordReply } from '../_util/discord/postDiscordReply';
-import { formatDate } from '../_util/strings/dateFormat';
 import { OpenAiClient } from '../_util/openai/openAiClient';
 import { generateSystemMessage } from '../_util/discord/generateSystemMessage';
+import { OpenAiConstants } from '../constants/openai';
+import { getPostResetMessages } from '../_util/discord/getPostResetMessages';
 dotenv.config();
 
 /* Max Token Count */
-const MAX_TOKEN_COUNT = 4096;
-const RESPONSE_TOKEN_COUNT = 500;
-const PROMPT_TOKEN_COUNT = MAX_TOKEN_COUNT - RESPONSE_TOKEN_COUNT; //Err on Side of Caution...
+const PROMPT_TOKEN_COUNT =
+  OpenAiConstants.MAX_TOKEN_COUNT - OpenAiConstants.RESPONSE_TOKEN_COUNT; //Err on Side of Caution...
 
 const logger = AppLogger.getInstance();
 const openai = OpenAiClient.getInstance();
@@ -37,53 +37,13 @@ module.exports = {
       `Message from ${triggerMessage.author.username} in channel: ${triggerMessage.channel.name}. Processing...`
     );
 
-    /* Fetch conversations to this point. */
-    triggerMessage.channel.messages
-      .fetch({ limit: 100 })
-      .then(async (channelMessages: any) => {
-        await findRelevantMessages(triggerMessage, channelMessages).then(
-          async (relevantMessages) => {
-            logger.info(Loggers.App, `${CustomStrings.Divider}`);
-            let sortedMessages = relevantMessages.sort(
-              (a: Message, b: Message) =>
-                a.createdTimestamp - b.createdTimestamp
-            );
-            logger.info(
-              Loggers.App,
-              `Fetched ${sortedMessages.size} messages in the channel`
-            );
-            await sendMessagesToApi(triggerMessage, sortedMessages);
-          }
-        );
-      })
-
-      .catch(console.error);
+    try {
+      const messages = await getPostResetMessages(triggerMessage);
+      await sendMessagesToApi(triggerMessage, messages);
+    } catch (err) {
+      logger.error(Loggers.App, err);
+    }
   },
-};
-
-const findRelevantMessages = async (message: Message, messages: any) => {
-  var channel = message.channel as TextChannel;
-
-  const resetMessage = messages.find(
-    (msg: Message) =>
-      msg.content.includes(CustomStrings.Reset) &&
-      msg.author.username === 'L.I.S.C.O'
-  );
-  if (resetMessage) {
-    var resetTime = formatDate(new Date(resetMessage.createdTimestamp));
-    logger.info(Loggers.App, `Loading messages after reset at ${resetTime}...`);
-    const postResetMessages = await channel.messages.fetch({
-      limit: 100,
-      after: resetMessage.id,
-    });
-    return postResetMessages;
-  } else {
-    logger.info(Loggers.App, `No reset command found. Loading messages...`);
-    let sortedMessages = messages.sort(
-      (a: Message, b: Message) => a.createdTimestamp - b.createdTimestamp
-    );
-    return sortedMessages;
-  }
 };
 
 const sendMessagesToApi = async (
