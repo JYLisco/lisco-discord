@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { Console } from 'console';
+import { CustomStrings } from '../../constants/strings';
 
 export enum Loggers {
   App = 'app',
@@ -60,7 +61,9 @@ export class AppLogger {
     if (logger === 'app') {
       this.appLogger.write(formattedMessage);
     } else {
+      this.apiLogger.write(`Response ${CustomStrings.Divider}`);
       this.apiLogger.write(formattedMessage);
+      this.apiLogger.write(`End Response ${CustomStrings.Divider}`);
     }
 
     // Write the formatted message to the log file

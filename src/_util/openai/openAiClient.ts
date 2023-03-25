@@ -31,29 +31,11 @@ export class OpenAiClient {
     return OpenAiClient.instance;
   }
 
-  async chat(
-    messageLog: Array<ChatCompletionRequestMessage>
-  ): Promise<ChatCompletionResponseMessage | undefined> {
-    this.logger.info(Loggers.App, 'Attempting to hit ChatGPT Api...');
-    const response = await this.openai.createChatCompletion({
-      model: 'gpt-3.5-turbo',
-      messages: messageLog,
-    });
-
-    /* Break the response into an array of strings for threading. */
-    const content = response.data.choices[0].message;
-
-    this.logger.info(Loggers.Api, `Response${CustomStrings.Divider}`);
-    this.logger.info(Loggers.Api, content?.content);
-    this.logger.info(Loggers.Api, `END Response${CustomStrings.Divider}`);
-
-    return content;
-  }
-
   async flagged(prompt: string): Promise<boolean> {
+    this.logger.info(Loggers.App, `${CustomStrings.Divider}`);
     this.logger.info(
       Loggers.App,
-      `Attempting to hit OpenAi Moderation Api with prompt '${prompt}'...`
+      `Attempting to hit OpenAi Moderation Api with prompt...`
     );
 
     const response = await this.openai.createModeration({
@@ -61,10 +43,10 @@ export class OpenAiClient {
     });
 
     /* Break the response into an array of strings for threading. */
-    const result = response.data.results[0].flagged;
+    const flagged = response.data.results[0].flagged;
 
-    if (result) {
-      this.logger.info(Loggers.App, `Prompt violates moderation guidelines.`);
+    if (flagged) {
+      this.logger.error(Loggers.App, `Prompt violates moderation guidelines.`);
     } else {
       this.logger.info(
         Loggers.App,
@@ -72,7 +54,7 @@ export class OpenAiClient {
       );
     }
 
-    return result;
+    return flagged;
   }
 
   async image(
@@ -80,16 +62,19 @@ export class OpenAiClient {
     n?: number,
     aspect?: 'Small' | 'Medium' | 'Large'
   ): Promise<ImagesResponseDataInner[] | undefined> {
-    this.logger.info(Loggers.App, 'Attempting to hit OpenAi Image Api...');
-
     const flagged = await this.flagged(prompt);
 
+    this.logger.info(Loggers.App, `${CustomStrings.Divider}`);
+
     if (flagged) {
-      console.log('Failed Moderation');
-      throw 'Failed Moderation';
+      const error = 'Prompt flagged by moderation check.';
+      throw error;
     } else {
       try {
         const size = ImageAspectRatios[aspect ?? 'Large'];
+
+        this.logger.info(Loggers.App, 'Attempting to hit OpenAi Image Api...');
+
         const response = await this.openai.createImage({
           prompt: prompt,
           size,
@@ -99,11 +84,53 @@ export class OpenAiClient {
 
         /* Break the response into an array of strings for threading. */
         const content = response.data.data;
+
+        if (content) {
+          this.logger.info(
+            Loggers.App,
+            `Received a response from API. Processing...`
+          );
+        } else {
+          this.logger.info(Loggers.App, `No Response from API.`);
+        }
+
         return content;
       } catch (e) {
-        console.log('Failed Image Gen');
-        throw 'Failed Moderation';
+        const error = 'Error in image generation.';
+        this.logger.error(Loggers.App, error);
+        throw error;
       }
     }
+  }
+
+  async chat(
+    messageLog: Array<ChatCompletionRequestMessage>
+  ): Promise<ChatCompletionResponseMessage | undefined> {
+    this.logger.info(Loggers.App, `${CustomStrings.Divider}`);
+
+    var model = 'gpt-3.5-turbo';
+    this.logger.info(
+      Loggers.App,
+      `Attempting to hit ChatGPT Api - Model: ${model}...`
+    );
+    const response = await this.openai.createChatCompletion({
+      model: model,
+      messages: messageLog,
+    });
+
+    /* Break the response into an array of strings for threading. */
+    const content = response.data.choices[0].message;
+
+    if (content) {
+      this.logger.info(
+        Loggers.App,
+        `Received a response from API. Processing...`
+      );
+      this.logger.info(Loggers.Api, content?.content);
+    } else {
+      this.logger.info(Loggers.App, `No Response from API.`);
+    }
+
+    return content;
   }
 }

@@ -9,6 +9,7 @@ import { OpenAiClient } from '../_util/openai/openAiClient';
 import { generateSystemMessage } from '../_util/discord/generateSystemMessage';
 import { OpenAiConstants } from '../constants/openai';
 import { getPostResetMessages } from '../_util/discord/getPostResetMessages';
+import { Behaviors } from '../constants/behaviors';
 dotenv.config();
 
 /* Max Token Count */
@@ -22,6 +23,8 @@ module.exports = {
   name: Events.MessageCreate,
   async execute(triggerMessage: any) {
     if (triggerMessage.author.bot) return;
+
+    logger.info(Loggers.App, `${CustomStrings.Divider}`);
 
     /* Respond in "-ai" channels and in DM's */
     if (
@@ -61,7 +64,7 @@ const sendMessagesToApi = async (
   messages.forEach(
     (m: { author: { bot: any; username: string }; content: any }) => {
       if (m.author.bot) {
-        if (m.author.username === 'L.I.S.C.O') {
+        if (m.author.username === Behaviors.Default.name) {
           messageLog.push({ role: 'assistant', content: m.content });
         }
       } else {
@@ -75,7 +78,6 @@ const sendMessagesToApi = async (
 
   messageLog = trimMessageLog(messageLog, PROMPT_TOKEN_COUNT);
   logger.info(Loggers.App, `Trimmed to ${messageLog.length - 1} messages.`);
-  logger.info(Loggers.App, `${CustomStrings.Divider}`);
   /* Try hitting the ChatGPT API with the conversation */
   try {
     /* Start the 'Is Typing' indicator while GPT constructs a response */

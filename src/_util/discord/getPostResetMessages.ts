@@ -1,4 +1,6 @@
 import { Message, TextChannel } from 'discord.js';
+import { OpenAiConstants } from '../../constants/openai';
+import { Behaviors } from '../../constants/behaviors';
 import { CustomStrings } from '../../constants/strings';
 import { AppLogger, Loggers } from '../resources/appLogger';
 import { formatDate } from '../strings/dateFormat';
@@ -11,7 +13,7 @@ export const getPostResetMessages = async (
   let result: Array<Message> = [];
   const channel = triggerMessage.channel as TextChannel;
   await channel.messages
-    .fetch({ limit: 100 })
+    .fetch({ limit: OpenAiConstants.MAX_CONVERSATION_COUNT })
     .then(async (channelMessages: any) => {
       await findRelevantMessages(triggerMessage, channelMessages).then(
         async (relevantMessages) => {
@@ -39,13 +41,13 @@ const findRelevantMessages = async (message: Message, messages: any) => {
   const resetMessage = messages.find(
     (msg: Message) =>
       msg.content.includes(CustomStrings.Reset) &&
-      msg.author.username === 'L.I.S.C.O'
+      msg.author.username === Behaviors.Default.name
   );
   if (resetMessage) {
     var resetTime = formatDate(new Date(resetMessage.createdTimestamp));
     logger.info(Loggers.App, `Loading messages after reset at ${resetTime}...`);
     const postResetMessages = await channel.messages.fetch({
-      limit: 100,
+      limit: OpenAiConstants.MAX_CONVERSATION_COUNT,
       after: resetMessage.id,
     });
     return postResetMessages;
