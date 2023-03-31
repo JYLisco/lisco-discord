@@ -9,6 +9,7 @@ import { OpenAiClient } from '../_util/openai/openAiClient';
 import { generateSystemMessage } from '../_util/discord/generateSystemMessage';
 import { OpenAiConstants } from '../constants/openai';
 import { getPostResetMessages } from '../_util/discord/getPostResetMessages';
+import { ChannelInfo, getChannelInfo } from '../_util/discord/getChannelInfo';
 
 dotenv.config();
 
@@ -35,14 +36,18 @@ module.exports = {
       return;
     }
 
+    var channel = triggerMessage.channel as TextChannel;
+
     logger.info(
       Loggers.App,
-      `Message from ${triggerMessage.author.username} in channel: ${triggerMessage.channel.name}. Processing...`
+      `Message from ${triggerMessage.author.username} in channel: ${channel.name}. Processing...`
     );
+
+    const channelInfo = await getChannelInfo(triggerMessage);
 
     try {
       const messages = await getPostResetMessages(triggerMessage);
-      await sendMessagesToApi(triggerMessage, messages);
+      await sendMessagesToApi(triggerMessage, channelInfo, messages);
     } catch (err) {
       logger.error(Loggers.App, err);
     }
@@ -51,14 +56,18 @@ module.exports = {
 
 const sendMessagesToApi = async (
   triggerMessage: Message,
+  channelInfo: ChannelInfo,
   messages: Array<Message>
 ) => {
   var channel = triggerMessage.channel as TextChannel;
+
   /* Start Constructing Chat History for Conversations */
   let messageLog: Array<ChatCompletionRequestMessage> = [
     {
       role: 'system',
-      content: await generateSystemMessage(triggerMessage),
+      content: await generateSystemMessage(
+        channelInfo.ExtractedKeywords['Mission']
+      ),
     },
   ];
   messages.forEach(
@@ -82,7 +91,17 @@ const sendMessagesToApi = async (
   try {
     /* Start the 'Is Typing' indicator while GPT constructs a response */
     await channel.sendTyping();
-    const response = await openai.chat(messageLog);
+
+    let response;
+
+    if (channelInfo.ExtractedKeywords['Model'] == 'gpt-4') {
+      response = await openai.chat(
+        messageLog,
+        channelInfo.ExtractedKeywords['Model']
+      );
+    } else {
+      response = await openai.chat(messageLog);
+    }
 
     if (response) {
       /* Push the message as a reply in discord */

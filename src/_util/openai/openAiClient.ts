@@ -104,17 +104,18 @@ export class OpenAiClient {
   }
 
   async chat(
-    messageLog: Array<ChatCompletionRequestMessage>
+    messageLog: Array<ChatCompletionRequestMessage>,
+    model?: 'gpt-4' | undefined
   ): Promise<ChatCompletionResponseMessage | undefined> {
     this.logger.info(Loggers.App, `${CustomStrings.Divider}`);
 
-    var model = 'gpt-3.5-turbo';
+    var chatModel = model ?? 'gpt-3.5-turbo';
     this.logger.info(
       Loggers.App,
-      `Attempting to hit ChatGPT Api - Model: ${model}...`
+      `Attempting to hit ChatGPT Api - Model: ${chatModel}...`
     );
     const response = await this.openai.createChatCompletion({
-      model: model,
+      model: chatModel,
       messages: messageLog,
     });
 

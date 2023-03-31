@@ -38,12 +38,14 @@ export const getPostResetMessages = async (
 
 const findRelevantMessages = async (message: Message, messages: any) => {
   var channel = message.channel as TextChannel;
+  var botName = process.env.BOT_NAME as string;
 
   const resetMessage = messages.find(
     (msg: Message) =>
       msg.content.includes(CustomStrings.Reset) &&
-      msg.author.username === (process.env.BOT_NAME as string)
+      msg.author.username === botName
   );
+
   if (resetMessage) {
     var resetTime = formatDate(new Date(resetMessage.createdTimestamp));
     logger.info(Loggers.App, `Loading messages after reset at ${resetTime}...`);

@@ -1,9 +1,4 @@
-import {
-  CommandInteraction,
-  PermissionsBitField,
-  SlashCommandBuilder,
-} from 'discord.js';
-import { Permissions } from 'discord.js';
+import { PermissionsBitField, SlashCommandBuilder } from 'discord.js';
 import { CustomStrings } from '../constants/strings';
 import { Command } from './interfaces/command';
 
