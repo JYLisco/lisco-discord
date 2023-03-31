@@ -61,7 +61,7 @@ export class AppLogger {
     if (logger === 'app') {
       this.appLogger.write(formattedMessage);
     } else {
-      this.apiLogger.write(`Response ${CustomStrings.Divider}`);
+      this.apiLogger.write(`\nResponse ${CustomStrings.Divider}\n`);
       this.apiLogger.write(formattedMessage);
       this.apiLogger.write(`End Response ${CustomStrings.Divider}`);
     }

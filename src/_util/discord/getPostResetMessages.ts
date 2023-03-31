@@ -1,10 +1,11 @@
 import { Message, TextChannel } from 'discord.js';
 import { OpenAiConstants } from '../../constants/openai';
-import { Behaviors } from '../../constants/behaviors';
 import { CustomStrings } from '../../constants/strings';
 import { AppLogger, Loggers } from '../resources/appLogger';
 import { formatDate } from '../strings/dateFormat';
+import dotenv from 'dotenv';
 
+dotenv.config();
 const logger = AppLogger.getInstance();
 
 export const getPostResetMessages = async (
@@ -23,7 +24,7 @@ export const getPostResetMessages = async (
           );
           logger.info(
             Loggers.App,
-            `Fetched ${sortedMessages.size} messages in the channel`
+            `Fetched ${sortedMessages.size}/${OpenAiConstants.MAX_CONVERSATION_COUNT} max messages in the channel`
           );
           result = sortedMessages;
         }
@@ -41,7 +42,7 @@ const findRelevantMessages = async (message: Message, messages: any) => {
   const resetMessage = messages.find(
     (msg: Message) =>
       msg.content.includes(CustomStrings.Reset) &&
-      msg.author.username === Behaviors.Default.name
+      msg.author.username === (process.env.BOT_NAME as string)
   );
   if (resetMessage) {
     var resetTime = formatDate(new Date(resetMessage.createdTimestamp));

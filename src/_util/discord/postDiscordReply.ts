@@ -11,10 +11,6 @@ export const postDiscordReply = async (
 ) => {
   const replies = processTextForDiscord(reply);
 
-  logger.info(Loggers.Api, `Message Replies${CustomStrings.Divider}`);
-  logger.info(Loggers.Api, replies);
-  logger.info(Loggers.Api, `END Message Replies${CustomStrings.Divider}`);
-
   // Send the first message as a reply to the trigger message
   const firstMessage = await triggerMessage.reply(replies[0]);
   let previousMessage = firstMessage;

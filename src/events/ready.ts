@@ -1,5 +1,4 @@
 import { Events } from 'discord.js';
-import { Behaviors } from '../constants/behaviors';
 import { DiscordClient } from 'src/discordClient';
 import { AppLogger, Loggers } from '../_util/resources/appLogger';
 
@@ -11,7 +10,9 @@ module.exports = {
   execute(client: DiscordClient) {
     logger.info(
       Loggers.App,
-      `${Behaviors.Default.name} online. Logged in as ${client?.user?.tag}`
+      `${process.env.BOT_NAME as string} online. Logged in as ${
+        client?.user?.tag
+      }`
     );
   },
 };

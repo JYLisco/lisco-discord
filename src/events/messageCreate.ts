@@ -9,7 +9,7 @@ import { OpenAiClient } from '../_util/openai/openAiClient';
 import { generateSystemMessage } from '../_util/discord/generateSystemMessage';
 import { OpenAiConstants } from '../constants/openai';
 import { getPostResetMessages } from '../_util/discord/getPostResetMessages';
-import { Behaviors } from '../constants/behaviors';
+
 dotenv.config();
 
 /* Max Token Count */
@@ -64,7 +64,7 @@ const sendMessagesToApi = async (
   messages.forEach(
     (m: { author: { bot: any; username: string }; content: any }) => {
       if (m.author.bot) {
-        if (m.author.username === Behaviors.Default.name) {
+        if (m.author.username === (process.env.BOT_NAME as string)) {
           messageLog.push({ role: 'assistant', content: m.content });
         }
       } else {

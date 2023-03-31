@@ -1,13 +1,16 @@
 import { Message, TextChannel } from 'discord.js';
-import { CustomStrings } from '../../constants/strings';
 import { AppLogger, Loggers } from '../resources/appLogger';
+import dotenv from 'dotenv';
 
 const logger = AppLogger.getInstance();
+
+dotenv.config();
 
 export const generateSystemMessage = async (
   discordMessage: Message
 ): Promise<string> => {
-  let systemMessage: string = CustomStrings['Identity'];
+  let systemMessage: string = ((('Your Name Is ' +
+    process.env.BOT_NAME) as string) + process.env.BOT_DESC) as string;
   const channel = discordMessage.channel;
 
   try {
