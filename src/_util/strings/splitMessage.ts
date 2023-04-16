@@ -23,7 +23,7 @@ export const splitMessage = (input: string): Array<string> => {
       }
     } else if (codeBlock) {
       /* If there's a code block in progress, check if adding the line will exceed the maximum length */
-      if ((codeBlock + line + '\n').length > 1995) {
+      if ((codeBlock + line + '\n').length > 2000) {
         /* Close existing code block if it exceeded the maximum length, and add it to the result array */
         codeBlock += '```\n';
         result.push(codeBlock.trim());
@@ -36,7 +36,7 @@ export const splitMessage = (input: string): Array<string> => {
       }
     } else {
       /* Otherwise, add the line to the result array as normal */
-      result.push(line);
+      splitAndPush(result, line);
     }
   });
 
@@ -47,4 +47,39 @@ export const splitMessage = (input: string): Array<string> => {
 
   /* Filter out any empty entries in the result array */
   return result;
+};
+
+const splitAndPush = (result: string[], line: string, maxChars = 2000) => {
+  // If the line is within the maximum character limit, push it and return
+  if (line.length <= maxChars) {
+    result.push(line);
+    return;
+  }
+
+  // Find a suitable split point by looking for the last period
+  let splitPoint = maxChars;
+
+  // Start from the maximum character limit and go backwards
+  for (let i = maxChars; i >= 0; i--) {
+    // If it's a period and not part of a number or acronym
+    const prevCharCode = line.charCodeAt(i - 1);
+    const nextCharCode = line.charCodeAt(i + 1);
+    if (
+      line[i] === '.' &&
+      (isNaN(prevCharCode - 48) || isNaN(nextCharCode - 48)) &&
+      line[i + 1] !== '.'
+    ) {
+      splitPoint = i + 1; // +1 to include the period in the first part
+      break;
+    }
+  }
+
+  // Push the substrings
+  const firstPart = line.slice(0, splitPoint);
+  const remainingPart = line.slice(splitPoint);
+
+  result.push(firstPart);
+
+  // Recurse for the remaining part
+  splitAndPush(result, remainingPart, maxChars);
 };
