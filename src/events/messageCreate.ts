@@ -7,15 +7,15 @@ import { trimMessageLog } from '../_util/openai/gpt/trimMessageLog';
 import { postDiscordReply } from '../_util/discord/postDiscordReply';
 import { OpenAiClient } from '../_util/openai/openAiClient';
 import { generateSystemMessage } from '../_util/discord/generateSystemMessage';
-import { OpenAiConstants } from '../constants/openai';
+import {
+  GptModels,
+  getModelFromString,
+  getTokenCountFromGptModel,
+} from '../constants/openai';
 import { getPostResetMessages } from '../_util/discord/getPostResetMessages';
 import { ChannelInfo, getChannelInfo } from '../_util/discord/getChannelInfo';
 
 dotenv.config();
-
-/* Max Token Count */
-const PROMPT_TOKEN_COUNT =
-  OpenAiConstants.MAX_TOKEN_COUNT - OpenAiConstants.RESPONSE_TOKEN_COUNT; //Err on Side of Caution...
 
 const logger = AppLogger.getInstance();
 const openai = OpenAiClient.getInstance();
@@ -85,8 +85,15 @@ const sendMessagesToApi = async (
     }
   );
 
-  messageLog = trimMessageLog(messageLog, PROMPT_TOKEN_COUNT);
-  logger.info(Loggers.App, `Trimmed to ${messageLog.length - 1} messages.`);
+  const model: string | undefined = channelInfo.ExtractedKeywords['Model'];
+  const gptModel = model ? getModelFromString(model) : GptModels.Gpt3_5_Turbo;
+
+  const tokenCount = getTokenCountFromGptModel(gptModel);
+  messageLog = trimMessageLog(messageLog, tokenCount);
+  logger.info(
+    Loggers.App,
+    `Trimmed to ${messageLog.length - 1} messages for Max ${tokenCount} tokens.`
+  );
   /* Try hitting the ChatGPT API with the conversation */
   try {
     /* Start the 'Is Typing' indicator while GPT constructs a response */
@@ -94,17 +101,13 @@ const sendMessagesToApi = async (
 
     let response;
 
-    if (channelInfo.ExtractedKeywords['Model'] == 'gpt-4') {
-      response = await openai.chat(
-        messageLog,
-        channelInfo.ExtractedKeywords['Model']
-      );
+    if (gptModel !== null) {
+      response = await openai.chat(messageLog, gptModel);
     } else {
       response = await openai.chat(messageLog);
     }
 
     if (response) {
-      /* Push the message as a reply in discord */
       await postDiscordReply(triggerMessage, response.content);
     } else {
       throw 'No API Response';

@@ -7,7 +7,7 @@ import {
 } from 'openai';
 import { AppLogger, Loggers } from '../resources/appLogger';
 import { CustomStrings } from '../../constants/strings';
-import { ImageAspectRatios } from '../../constants/openai';
+import { GptModels, ImageAspectRatios } from '../../constants/openai';
 
 export class OpenAiClient {
   private static instance: OpenAiClient;
@@ -105,11 +105,11 @@ export class OpenAiClient {
 
   async chat(
     messageLog: Array<ChatCompletionRequestMessage>,
-    model?: 'gpt-4' | undefined
+    model?: GptModels
   ): Promise<ChatCompletionResponseMessage | undefined> {
     this.logger.info(Loggers.App, `${CustomStrings.Divider}`);
 
-    var chatModel = model ?? 'gpt-3.5-turbo';
+    var chatModel = model?.valueOf() ?? 'gpt-3.5-turbo';
     this.logger.info(
       Loggers.App,
       `Attempting to hit ChatGPT Api - Model: ${chatModel}...`
